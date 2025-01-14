@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, User, Bell, Search } from "lucide-react";
+import { Home, User, Bell, Search, Heart } from "lucide-react";
 
 interface LayoutProps {
   children: ReactNode;
@@ -17,7 +17,7 @@ export function Layout({ children }: LayoutProps) {
         {children}
       </main>
       
-      <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border py-2 px-4 md:py-3">
+      <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t border-border py-2 px-4 md:py-3">
         <div className="container max-w-2xl mx-auto">
           <div className="flex items-center justify-around">
             <Link
@@ -38,6 +38,16 @@ export function Layout({ children }: LayoutProps) {
             >
               <Search className="h-6 w-6" />
               <span className="text-xs">Search</span>
+            </Link>
+            
+            <Link
+              to="/hope"
+              className={`flex flex-col items-center gap-1 transition-colors ${
+                isActive("/hope") ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Heart className="h-6 w-6" />
+              <span className="text-xs">Hope</span>
             </Link>
             
             <Link
