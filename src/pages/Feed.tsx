@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Heart, MessageCircle, Loader2, ImagePlus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface Post {
   id: string;
