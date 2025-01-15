@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Profile from "./pages/Profile";
 import Hope from "./pages/Hope";
 import Feed from "./pages/Feed";
+import Search from "./pages/Search";
 
 const queryClient = new QueryClient({
   defaultOptions: {
