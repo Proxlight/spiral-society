@@ -27,6 +27,7 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/hope" element={<Hope />} />
           <Route path="/feed" element={<Feed />} />
+          <Route path="/search" element={<Search />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
