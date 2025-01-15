@@ -1,5 +1,5 @@
 import { Layout } from "@/components/Layout";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,13 +7,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
-import { Heart, MessageCircle, Loader2 } from "lucide-react";
+import { Heart, MessageCircle, Loader2, ImagePlus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { Input } from "@/components/ui/input";
 
 interface Post {
   id: string;
   content: string;
   created_at: string;
+  image_url: string | null;
   profiles: {
     username: string;
     avatar_url: string;
@@ -29,6 +31,9 @@ const Feed = () => {
   const [newPost, setNewPost] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -92,13 +97,48 @@ const Feed = () => {
     };
   };
 
+  const handleUploadImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+
+      if (!event.target.files || event.target.files.length === 0) {
+        throw new Error('You must select an image to upload.');
+      }
+
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${crypto.randomUUID()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('posts')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      setImageUrl(filePath);
+      toast({
+        title: "Success",
+        description: "Image uploaded successfully",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error uploading image",
+        description: error.message,
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleCreatePost = async () => {
-    if (!newPost.trim()) return;
+    if (!newPost.trim() && !imageUrl) return;
 
     setIsLoading(true);
     const { error } = await supabase.from("posts").insert({
       content: newPost.trim(),
       user_id: userId,
+      image_url: imageUrl,
     });
 
     setIsLoading(false);
@@ -111,6 +151,10 @@ const Feed = () => {
       });
     } else {
       setNewPost("");
+      setImageUrl(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
       toast({
         title: "Post created successfully",
       });
@@ -143,11 +187,34 @@ const Feed = () => {
               onChange={(e) => setNewPost(e.target.value)}
               className="min-h-[100px]"
             />
+            <div className="mt-4 flex items-center gap-4">
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleUploadImage}
+                disabled={uploading}
+                ref={fileInputRef}
+                className="hidden"
+                id="image-upload"
+              />
+              <Label 
+                htmlFor="image-upload" 
+                className="cursor-pointer flex items-center gap-2 text-muted-foreground hover:text-foreground"
+              >
+                <ImagePlus className="h-5 w-5" />
+                {uploading ? "Uploading..." : "Add Image"}
+              </Label>
+              {imageUrl && (
+                <span className="text-sm text-muted-foreground">
+                  Image attached ✓
+                </span>
+              )}
+            </div>
           </CardContent>
           <CardFooter className="flex justify-end">
             <Button
               onClick={handleCreatePost}
-              disabled={isLoading || !newPost.trim()}
+              disabled={isLoading || (!newPost.trim() && !imageUrl)}
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Post
@@ -160,7 +227,12 @@ const Feed = () => {
             <Card key={post.id}>
               <CardHeader className="flex flex-row items-center space-x-4">
                 <Avatar>
-                  <AvatarImage src={post.profiles.avatar_url || ""} />
+                  <AvatarImage 
+                    src={post.profiles.avatar_url ? 
+                      `${supabase.storage.from('avatars').getPublicUrl(post.profiles.avatar_url).data.publicUrl}` 
+                      : undefined
+                    } 
+                  />
                   <AvatarFallback>
                     {post.profiles.username?.[0]?.toUpperCase() || "U"}
                   </AvatarFallback>
@@ -174,8 +246,15 @@ const Feed = () => {
                   </p>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <p className="whitespace-pre-wrap">{post.content}</p>
+                {post.image_url && (
+                  <img
+                    src={`${supabase.storage.from('posts').getPublicUrl(post.image_url).data.publicUrl}`}
+                    alt="Post attachment"
+                    className="rounded-lg max-h-96 w-full object-cover"
+                  />
+                )}
               </CardContent>
               <CardFooter className="flex gap-4">
                 <Button
