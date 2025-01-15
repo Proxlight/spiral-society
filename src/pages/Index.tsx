@@ -1,8 +1,40 @@
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/Layout";
 import { Link } from "react-router-dom";
+import { Auth } from "@supabase/auth-ui-react";
+import { ThemeSupa } from "@supabase/auth-ui-shared";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const [session, setSession] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) navigate("/feed");
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) navigate("/feed");
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  if (session) {
+    return null; // Will redirect to feed
+  }
+
   return (
     <Layout>
       <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center text-center space-y-8 animate-fade-up">
@@ -14,16 +46,31 @@ const Index = () => {
             Connect with friends, share moments, and discover stories that matter to you.
           </p>
         </div>
-        
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Button asChild size="lg" className="min-w-[200px]">
-            <Link to="/login">Log in</Link>
-          </Button>
-          <Button asChild size="lg" variant="outline" className="min-w-[200px]">
-            <Link to="/signup">Sign up</Link>
-          </Button>
+
+        <div className="w-full max-w-[400px] p-4 bg-card rounded-lg shadow-sm border">
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          <Auth
+            supabaseClient={supabase}
+            appearance={{
+              theme: ThemeSupa,
+              variables: {
+                default: {
+                  colors: {
+                    brand: 'rgb(var(--primary))',
+                    brandAccent: 'rgb(var(--primary))',
+                  },
+                },
+              },
+            }}
+            providers={[]}
+            redirectTo={window.location.origin + "/feed"}
+          />
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
           <div className="p-6 bg-card rounded-lg shadow-sm border animate-fade-up" style={{ animationDelay: "100ms" }}>
             <h3 className="font-semibold text-lg mb-2">Share Moments</h3>
