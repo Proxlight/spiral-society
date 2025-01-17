@@ -2,52 +2,135 @@ import { Layout } from "@/components/Layout";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
-import { Send, Heart, MessageCircle, Share2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Send, Heart, MessageCircle, Share2, Pencil, Trash2, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Post {
   id: string;
-  author: string;
   content: string;
-  likes: number;
-  comments: number;
-  image?: string;
+  created_at: string;
+  user_id: string;
+  profiles: {
+    username: string;
+    avatar_url: string | null;
+  };
 }
 
 export default function Hope() {
   const [newPost, setNewPost] = useState("");
-  const [posts, setPosts] = useState<Post[]>([
-    {
-      id: "1",
-      author: "Sarah Chen",
-      content: "Just launched my new AI project! Check it out: www.aiproject.com",
-      likes: 42,
-      comments: 12,
-      image: "https://images.unsplash.com/photo-1518770660439-4636190af475"
-    },
-    {
-      id: "2",
-      author: "Alex Rivera",
-      content: "Looking for collaborators on a sustainable energy initiative. DM if interested!",
-      likes: 28,
-      comments: 8,
-      image: "https://images.unsplash.com/photo-1469474968028-56623f02e42e"
-    }
-  ]);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [editingPost, setEditingPost] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [deletePostId, setDeletePostId] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  const handlePost = () => {
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const fetchPosts = async () => {
+    const { data, error } = await supabase
+      .from('posts')
+      .select(`
+        *,
+        profiles (
+          username,
+          avatar_url
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error fetching posts",
+        description: error.message
+      });
+    } else {
+      setPosts(data || []);
+    }
+  };
+
+  const handlePost = async () => {
     if (!newPost.trim()) return;
+    setIsLoading(true);
+
+    const { error } = await supabase
+      .from('posts')
+      .insert({ content: newPost.trim() });
+
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error creating post",
+        description: error.message
+      });
+    } else {
+      setNewPost("");
+      fetchPosts();
+      toast({
+        title: "Post created successfully"
+      });
+    }
+  };
+
+  const handleEdit = async (postId: string) => {
+    if (!editContent.trim()) return;
     
-    const post: Post = {
-      id: Date.now().toString(),
-      author: "Current User",
-      content: newPost,
-      likes: 0,
-      comments: 0
-    };
-    
-    setPosts([post, ...posts]);
-    setNewPost("");
+    const { error } = await supabase
+      .from('posts')
+      .update({ content: editContent })
+      .eq('id', postId);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error updating post",
+        description: error.message
+      });
+    } else {
+      setEditingPost(null);
+      fetchPosts();
+      toast({
+        title: "Post updated successfully"
+      });
+    }
+  };
+
+  const handleDelete = async (postId: string) => {
+    const { error } = await supabase
+      .from('posts')
+      .delete()
+      .eq('id', postId);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error deleting post",
+        description: error.message
+      });
+    } else {
+      setDeletePostId(null);
+      fetchPosts();
+      toast({
+        title: "Post deleted successfully"
+      });
+    }
   };
 
   return (
@@ -62,8 +145,12 @@ export default function Hope() {
               className="min-h-[100px] resize-none"
             />
             <div className="flex justify-end">
-              <Button onClick={handlePost}>
-                <Send className="mr-2" />
+              <Button onClick={handlePost} disabled={isLoading}>
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="mr-2" />
+                )}
                 Post
               </Button>
             </div>
@@ -80,33 +167,69 @@ export default function Hope() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      {post.author[0]}
+                      {post.profiles.username?.[0] || 'U'}
                     </div>
                     <div>
-                      <h3 className="font-semibold">{post.author}</h3>
-                      <p className="text-sm text-muted-foreground">Just now</p>
+                      <h3 className="font-semibold">{post.profiles.username}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(post.created_at).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
+                  {post.user_id === (supabase.auth.getUser() || {}).data?.user?.id && (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setEditingPost(post.id);
+                          setEditContent(post.content);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeletePostId(post.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
-                <p className="mt-4 text-foreground/90">{post.content}</p>
-
-                {post.image && (
-                  <img
-                    src={post.image}
-                    alt="Post attachment"
-                    className="mt-4 rounded-lg w-full h-48 object-cover"
-                  />
+                {editingPost === post.id ? (
+                  <div className="mt-4 space-y-4">
+                    <Textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className="min-h-[100px]"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setEditingPost(null)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button onClick={() => handleEdit(post.id)}>
+                        Save Changes
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-4 text-foreground/90">{post.content}</p>
                 )}
 
                 <div className="flex items-center space-x-4 mt-4 pt-4 border-t">
                   <Button variant="ghost" size="sm">
                     <Heart className="mr-1" />
-                    {post.likes}
+                    0
                   </Button>
                   <Button variant="ghost" size="sm">
                     <MessageCircle className="mr-1" />
-                    {post.comments}
+                    0
                   </Button>
                   <Button variant="ghost" size="sm">
                     <Share2 className="mr-1" />
@@ -117,6 +240,23 @@ export default function Hope() {
             ))}
           </div>
         </ScrollArea>
+
+        <AlertDialog open={!!deletePostId} onOpenChange={() => setDeletePostId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete your post.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => deletePostId && handleDelete(deletePostId)}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Layout>
   );
