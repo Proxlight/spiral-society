@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect } from "react";
 import { Send, Heart, MessageCircle, Share2, Pencil, Trash2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { User } from "@supabase/supabase-js";
 
 interface Post {
   id: string;
@@ -35,10 +36,25 @@ export default function Hope() {
   const [editingPost, setEditingPost] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const [deletePostId, setDeletePostId] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
+    // Get initial user
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
     fetchPosts();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchPosts = async () => {
@@ -65,12 +81,15 @@ export default function Hope() {
   };
 
   const handlePost = async () => {
-    if (!newPost.trim()) return;
+    if (!newPost.trim() || !user) return;
     setIsLoading(true);
 
     const { error } = await supabase
       .from('posts')
-      .insert({ content: newPost.trim() });
+      .insert({ 
+        content: newPost.trim(),
+        user_id: user.id
+      });
 
     setIsLoading(false);
 
@@ -90,12 +109,13 @@ export default function Hope() {
   };
 
   const handleEdit = async (postId: string) => {
-    if (!editContent.trim()) return;
+    if (!editContent.trim() || !user) return;
     
     const { error } = await supabase
       .from('posts')
       .update({ content: editContent })
-      .eq('id', postId);
+      .eq('id', postId)
+      .eq('user_id', user.id);
 
     if (error) {
       toast({
@@ -113,10 +133,13 @@ export default function Hope() {
   };
 
   const handleDelete = async (postId: string) => {
+    if (!user) return;
+
     const { error } = await supabase
       .from('posts')
       .delete()
-      .eq('id', postId);
+      .eq('id', postId)
+      .eq('user_id', user.id);
 
     if (error) {
       toast({
@@ -145,7 +168,7 @@ export default function Hope() {
               className="min-h-[100px] resize-none"
             />
             <div className="flex justify-end">
-              <Button onClick={handlePost} disabled={isLoading}>
+              <Button onClick={handlePost} disabled={isLoading || !user}>
                 {isLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
@@ -176,7 +199,7 @@ export default function Hope() {
                       </p>
                     </div>
                   </div>
-                  {post.user_id === (supabase.auth.getUser() || {}).data?.user?.id && (
+                  {user && post.user_id === user.id && (
                     <div className="flex gap-2">
                       <Button
                         variant="ghost"
