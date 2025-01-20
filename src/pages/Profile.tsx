@@ -1,123 +1,127 @@
 import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
-import { Settings, Share2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { MessageCircle, UserPlus, UserMinus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { MessageList } from "@/components/MessageList";
 
 interface Profile {
+  id: string;
   username: string;
   avatar_url: string | null;
+  _count?: {
+    followers: number;
+    following: number;
+  };
 }
 
 export default function Profile() {
+  const { username } = useParams();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
   useEffect(() => {
     getProfile();
-  }, []);
+    getCurrentUser();
+  }, [username]);
+
+  async function getCurrentUser() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      setCurrentUser(session.user.id);
+    }
+  }
 
   async function getProfile() {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        navigate('/');
-        return;
-      }
+      if (!username) return;
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('username, avatar_url')
-        .eq('id', session.user.id)
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("username", username)
         .single();
 
-      if (error) throw error;
-      setProfile(data);
+      if (profileError) throw profileError;
+      
+      if (profileData) {
+        const { data: followersData } = await supabase
+          .from("follows")
+          .select("*")
+          .eq("following_id", profileData.id);
+
+        const { data: followingData } = await supabase
+          .from("follows")
+          .select("*")
+          .eq("follower_id", profileData.id);
+
+        const { data: isFollowingData } = await supabase
+          .from("follows")
+          .select("*")
+          .eq("following_id", profileData.id)
+          .eq("follower_id", currentUser)
+          .single();
+
+        setProfile(profileData);
+        setFollowersCount(followersData?.length || 0);
+        setFollowingCount(followingData?.length || 0);
+        setIsFollowing(!!isFollowingData);
+      }
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error fetching profile",
         description: error.message,
       });
-    } finally {
-      setLoading(false);
+      navigate("/feed");
     }
   }
 
-  async function uploadAvatar(event: React.ChangeEvent<HTMLInputElement>) {
+  const handleFollow = async () => {
+    if (!profile || !currentUser) return;
+
     try {
-      setUploading(true);
-
-      if (!event.target.files || event.target.files.length === 0) {
-        throw new Error('You must select an image to upload.');
+      if (isFollowing) {
+        await supabase
+          .from("follows")
+          .delete()
+          .eq("follower_id", currentUser)
+          .eq("following_id", profile.id);
+        setFollowersCount((prev) => prev - 1);
+      } else {
+        await supabase.from("follows").insert({
+          follower_id: currentUser,
+          following_id: profile.id,
+        });
+        setFollowersCount((prev) => prev + 1);
       }
-
-      const file = event.target.files[0];
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${crypto.randomUUID()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: filePath })
-        .eq('id', session?.user.id);
-
-      if (updateError) throw updateError;
-
-      toast({
-        title: "Success",
-        description: "Avatar updated successfully",
-      });
-      
-      getProfile();
+      setIsFollowing(!isFollowing);
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error uploading avatar",
-        description: error.message,
+        title: "Error",
+        description: "Failed to update follow status",
       });
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    document.documentElement.classList.toggle("dark");
-  };
-
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Error signing out",
-        description: error.message,
-      });
-    } else {
-      navigate('/');
     }
   };
 
-  if (loading) {
+  if (!profile) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[50vh]">
@@ -132,78 +136,77 @@ export default function Profile() {
       <div className="animate-fade-in space-y-6 p-4">
         <Card className="overflow-hidden backdrop-blur-sm bg-opacity-50">
           <CardHeader className="relative p-6">
-            <div className="absolute right-6 top-6 flex gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={toggleDarkMode}
-                className="rounded-full"
-              >
-                {darkMode ? "🌞" : "🌙"}
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => toast({ title: "Settings" })}
-                className="rounded-full"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => toast({ title: "Share profile" })}
-                className="rounded-full"
-              >
-                <Share2 className="h-4 w-4" />
-              </Button>
-            </div>
-            
             <div className="flex flex-col items-center space-y-4">
-              <div className="relative">
-                <Avatar className="h-24 w-24">
-                  <AvatarImage src={profile?.avatar_url ? `${supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}` : undefined} />
-                  <AvatarFallback>{profile?.username?.[0]?.toUpperCase() || '?'}</AvatarFallback>
-                </Avatar>
-                <Label htmlFor="avatar" className="cursor-pointer absolute bottom-0 right-0 bg-primary text-white rounded-full p-2">
-                  📷
-                </Label>
-                <Input
-                  type="file"
-                  id="avatar"
-                  accept="image/*"
-                  onChange={uploadAvatar}
-                  disabled={uploading}
-                  className="hidden"
+              <Avatar className="h-24 w-24">
+                <AvatarImage
+                  src={
+                    profile.avatar_url
+                      ? `${
+                          supabase.storage
+                            .from("avatars")
+                            .getPublicUrl(profile.avatar_url).data.publicUrl
+                        }`
+                      : undefined
+                  }
                 />
-              </div>
-              
+                <AvatarFallback>
+                  {profile.username?.[0]?.toUpperCase() || "?"}
+                </AvatarFallback>
+              </Avatar>
+
               <div className="text-center">
-                <h2 className="text-2xl font-bold">{profile?.username || 'Anonymous'}</h2>
+                <h2 className="text-2xl font-bold">{profile.username}</h2>
               </div>
-              
-              <Button
-                variant="default"
-                onClick={handleSignOut}
-                className="rounded-full"
-              >
-                Sign Out
-              </Button>
+
+              {currentUser && currentUser !== profile.id && (
+                <div className="flex gap-2">
+                  <Button
+                    variant={isFollowing ? "outline" : "default"}
+                    onClick={handleFollow}
+                  >
+                    {isFollowing ? (
+                      <>
+                        <UserMinus className="mr-2 h-4 w-4" />
+                        Unfollow
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Follow
+                      </>
+                    )}
+                  </Button>
+
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        Message
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Message {profile.username}</DialogTitle>
+                      </DialogHeader>
+                      <MessageList
+                        recipientId={profile.id}
+                        currentUserId={currentUser}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              )}
             </div>
           </CardHeader>
-          
+
           <CardContent>
-            <div className="grid grid-cols-3 gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4 py-4">
               <div className="text-center">
-                <div className="text-2xl font-bold">0</div>
-                <div className="text-xs text-muted-foreground">Posts</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold">0</div>
+                <div className="text-2xl font-bold">{followersCount}</div>
                 <div className="text-xs text-muted-foreground">Followers</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold">0</div>
+                <div className="text-2xl font-bold">{followingCount}</div>
                 <div className="text-xs text-muted-foreground">Following</div>
               </div>
             </div>
