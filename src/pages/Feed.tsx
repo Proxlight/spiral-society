@@ -7,10 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
-import { Heart, MessageCircle, Loader2, ImagePlus } from "lucide-react";
+import { MessageCircle, Loader2, ImagePlus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LikeButton } from "@/components/LikeButton";
+import { CommentSection } from "@/components/CommentSection";
+import { Link } from "react-router-dom";
 
 interface Post {
   id: string;
@@ -198,8 +201,8 @@ const Feed = () => {
                 className="hidden"
                 id="image-upload"
               />
-              <Label 
-                htmlFor="image-upload" 
+              <Label
+                htmlFor="image-upload"
                 className="cursor-pointer flex items-center gap-2 text-muted-foreground hover:text-foreground"
               >
                 <ImagePlus className="h-5 w-5" />
@@ -217,7 +220,9 @@ const Feed = () => {
               onClick={handleCreatePost}
               disabled={isLoading || (!newPost.trim() && !imageUrl)}
             >
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isLoading && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Post
             </Button>
           </CardFooter>
@@ -227,19 +232,32 @@ const Feed = () => {
           {posts.map((post) => (
             <Card key={post.id}>
               <CardHeader className="flex flex-row items-center space-x-4">
-                <Avatar>
-                  <AvatarImage 
-                    src={post.profiles.avatar_url ? 
-                      `${supabase.storage.from('avatars').getPublicUrl(post.profiles.avatar_url).data.publicUrl}` 
-                      : undefined
-                    } 
-                  />
-                  <AvatarFallback>
-                    {post.profiles.username?.[0]?.toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
+                <Link to={`/profile/${post.profiles.username}`}>
+                  <Avatar>
+                    <AvatarImage
+                      src={
+                        post.profiles.avatar_url
+                          ? `${
+                              supabase.storage
+                                .from("avatars")
+                                .getPublicUrl(post.profiles.avatar_url).data
+                                .publicUrl
+                            }`
+                          : undefined
+                      }
+                    />
+                    <AvatarFallback>
+                      {post.profiles.username?.[0]?.toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
                 <div className="flex flex-col">
-                  <p className="font-semibold">{post.profiles.username}</p>
+                  <Link
+                    to={`/profile/${post.profiles.username}`}
+                    className="font-semibold hover:underline"
+                  >
+                    {post.profiles.username}
+                  </Link>
                   <p className="text-sm text-muted-foreground">
                     {formatDistanceToNow(new Date(post.created_at), {
                       addSuffix: true,
@@ -251,31 +269,33 @@ const Feed = () => {
                 <p className="whitespace-pre-wrap">{post.content}</p>
                 {post.image_url && (
                   <img
-                    src={`${supabase.storage.from('posts').getPublicUrl(post.image_url).data.publicUrl}`}
+                    src={`${
+                      supabase.storage
+                        .from("posts")
+                        .getPublicUrl(post.image_url).data.publicUrl
+                    }`}
                     alt="Post attachment"
                     className="rounded-lg max-h-96 w-full object-cover"
                   />
                 )}
               </CardContent>
-              <CardFooter className="flex gap-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleLike(post.id)}
-                >
-                  <Heart
-                    className={`mr-2 h-4 w-4 ${
-                      post.likes.some((like) => like.user_id === userId)
-                        ? "fill-current text-red-500"
-                        : ""
-                    }`}
-                  />
-                  {post.likes.length}
-                </Button>
-                <Button variant="ghost" size="sm">
-                  <MessageCircle className="mr-2 h-4 w-4" />
-                  {post.comments.length}
-                </Button>
+              <CardFooter className="flex flex-col gap-4">
+                <div className="flex gap-4 w-full">
+                  {userId && (
+                    <LikeButton
+                      postId={post.id}
+                      userId={userId}
+                      initialLikes={post.likes.length}
+                    />
+                  )}
+                  <Button variant="ghost" size="sm">
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    {post.comments.length}
+                  </Button>
+                </div>
+                {userId && (
+                  <CommentSection postId={post.id} userId={userId} />
+                )}
               </CardFooter>
             </Card>
           ))}
