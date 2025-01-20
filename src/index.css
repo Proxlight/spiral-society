@@ -73,7 +73,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-gradient-to-br from-background to-background/80 text-foreground antialiased min-h-screen;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-display;
@@ -84,4 +84,21 @@
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* Custom animations */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }

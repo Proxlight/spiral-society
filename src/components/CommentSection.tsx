@@ -103,17 +103,19 @@ export function CommentSection({ postId, userId }: CommentSectionProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-fade-in">
       <div className="flex items-end gap-2">
         <Textarea
           placeholder="Write a comment..."
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
-          className="min-h-[80px]"
+          className="min-h-[80px] resize-none transition-all duration-300 focus:ring-2 focus:ring-primary"
         />
         <Button
           onClick={handleSubmitComment}
           disabled={isLoading || !newComment.trim()}
+          className="relative overflow-hidden transition-all duration-300 hover:scale-105"
+          size="icon"
         >
           <Send className="h-4 w-4" />
         </Button>
@@ -123,9 +125,9 @@ export function CommentSection({ postId, userId }: CommentSectionProps) {
         {comments.map((comment) => (
           <div
             key={comment.id}
-            className="flex gap-3 items-start border-b pb-4"
+            className="flex gap-3 items-start border-b pb-4 last:border-0 animate-fade-up"
           >
-            <Avatar className="h-8 w-8">
+            <Avatar className="h-8 w-8 ring-2 ring-primary/20">
               <AvatarImage
                 src={
                   comment.profiles.avatar_url
@@ -138,13 +140,13 @@ export function CommentSection({ postId, userId }: CommentSectionProps) {
                     : undefined
                 }
               />
-              <AvatarFallback>
+              <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/30">
                 {comment.profiles.username?.[0]?.toUpperCase() || "?"}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
+            <div className="flex-1 group">
               <div className="flex items-center gap-2">
-                <span className="font-semibold">
+                <span className="font-semibold hover:text-primary transition-colors duration-300">
                   {comment.profiles.username}
                 </span>
                 <span className="text-xs text-muted-foreground">
@@ -153,7 +155,9 @@ export function CommentSection({ postId, userId }: CommentSectionProps) {
                   })}
                 </span>
               </div>
-              <p className="text-sm mt-1">{comment.content}</p>
+              <p className="text-sm mt-1 leading-relaxed transition-all duration-300 group-hover:translate-x-1">
+                {comment.content}
+              </p>
             </div>
           </div>
         ))}

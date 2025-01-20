@@ -182,14 +182,14 @@ const Feed = () => {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto py-8 space-y-8">
-        <Card>
+      <div className="max-w-2xl mx-auto py-8 space-y-8 animate-fade-in">
+        <Card className="backdrop-blur-sm bg-opacity-50 border-none shadow-lg hover:shadow-xl transition-all duration-300">
           <CardContent className="pt-6">
             <Textarea
               placeholder="What's on your mind?"
               value={newPost}
               onChange={(e) => setNewPost(e.target.value)}
-              className="min-h-[100px]"
+              className="min-h-[100px] resize-none transition-all duration-300 focus:ring-2 focus:ring-primary"
             />
             <div className="mt-4 flex items-center gap-4">
               <Input
@@ -203,13 +203,13 @@ const Feed = () => {
               />
               <Label
                 htmlFor="image-upload"
-                className="cursor-pointer flex items-center gap-2 text-muted-foreground hover:text-foreground"
+                className="cursor-pointer flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors duration-300"
               >
                 <ImagePlus className="h-5 w-5" />
                 {uploading ? "Uploading..." : "Add Image"}
               </Label>
               {imageUrl && (
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground animate-fade-in">
                   Image attached ✓
                 </span>
               )}
@@ -219,6 +219,7 @@ const Feed = () => {
             <Button
               onClick={handleCreatePost}
               disabled={isLoading || (!newPost.trim() && !imageUrl)}
+              className="relative overflow-hidden transition-all duration-300 hover:scale-105"
             >
               {isLoading && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -228,12 +229,18 @@ const Feed = () => {
           </CardFooter>
         </Card>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           {posts.map((post) => (
-            <Card key={post.id}>
+            <Card 
+              key={post.id}
+              className="group hover:shadow-lg transition-all duration-300 animate-fade-up border-none bg-white/80 backdrop-blur-sm"
+            >
               <CardHeader className="flex flex-row items-center space-x-4">
-                <Link to={`/profile/${post.profiles.username}`}>
-                  <Avatar>
+                <Link 
+                  to={`/profile/${post.profiles.username}`}
+                  className="transition-transform duration-300 hover:scale-105"
+                >
+                  <Avatar className="ring-2 ring-primary/20 hover:ring-primary/40 transition-all duration-300">
                     <AvatarImage
                       src={
                         post.profiles.avatar_url
@@ -246,7 +253,7 @@ const Feed = () => {
                           : undefined
                       }
                     />
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/30">
                       {post.profiles.username?.[0]?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
@@ -254,7 +261,7 @@ const Feed = () => {
                 <div className="flex flex-col">
                   <Link
                     to={`/profile/${post.profiles.username}`}
-                    className="font-semibold hover:underline"
+                    className="font-semibold hover:text-primary transition-colors duration-300"
                   >
                     {post.profiles.username}
                   </Link>
@@ -266,7 +273,7 @@ const Feed = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="whitespace-pre-wrap">{post.content}</p>
+                <p className="whitespace-pre-wrap leading-relaxed">{post.content}</p>
                 {post.image_url && (
                   <img
                     src={`${
@@ -275,7 +282,7 @@ const Feed = () => {
                         .getPublicUrl(post.image_url).data.publicUrl
                     }`}
                     alt="Post attachment"
-                    className="rounded-lg max-h-96 w-full object-cover"
+                    className="rounded-lg max-h-96 w-full object-cover transition-transform duration-300 group-hover:scale-[1.01]"
                   />
                 )}
               </CardContent>
@@ -288,7 +295,7 @@ const Feed = () => {
                       initialLikes={post.likes.length}
                     />
                   )}
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="hover:scale-105 transition-transform duration-300">
                     <MessageCircle className="mr-2 h-4 w-4" />
                     {post.comments.length}
                   </Button>
