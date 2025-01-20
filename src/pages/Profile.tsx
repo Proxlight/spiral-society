@@ -11,8 +11,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { MessageCircle, UserPlus, UserMinus } from "lucide-react";
+import { MessageCircle, UserPlus, UserMinus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { MessageList } from "@/components/MessageList";
 
@@ -35,6 +46,8 @@ export default function Profile() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [posts, setPosts] = useState<any[]>([]);
 
   useEffect(() => {
     getProfile();
@@ -45,7 +58,30 @@ export default function Profile() {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       setCurrentUser(session.user.id);
+      if (profile?.id) {
+        fetchUserContent(profile.id);
+      }
     }
+  }
+
+  async function fetchUserContent(userId: string) {
+    // Fetch messages
+    const { data: messagesData } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("sender_id", userId)
+      .order("created_at", { ascending: false });
+    
+    setMessages(messagesData || []);
+
+    // Fetch posts
+    const { data: postsData } = await supabase
+      .from("posts")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    
+    setPosts(postsData || []);
   }
 
   async function getProfile() {
@@ -82,8 +118,11 @@ export default function Profile() {
         setFollowersCount(followersData?.length || 0);
         setFollowingCount(followingData?.length || 0);
         setIsFollowing(!!isFollowingData);
+        
+        // Fetch user content after profile is set
+        fetchUserContent(profileData.id);
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error fetching profile",
@@ -112,11 +151,60 @@ export default function Profile() {
         setFollowersCount((prev) => prev + 1);
       }
       setIsFollowing(!isFollowing);
-    } catch (error) {
+      toast({
+        title: isFollowing ? "Unfollowed successfully" : "Followed successfully",
+      });
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to update follow status",
+      });
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from("messages")
+        .delete()
+        .eq("id", messageId)
+        .eq("sender_id", currentUser);
+
+      if (error) throw error;
+
+      setMessages(messages.filter(msg => msg.id !== messageId));
+      toast({
+        title: "Message deleted successfully",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error deleting message",
+        description: error.message,
+      });
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", postId)
+        .eq("user_id", currentUser);
+
+      if (error) throw error;
+
+      setPosts(posts.filter(post => post.id !== postId));
+      toast({
+        title: "Post deleted successfully",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error deleting post",
+        description: error.message,
       });
     }
   };
@@ -133,11 +221,11 @@ export default function Profile() {
 
   return (
     <Layout>
-      <div className="animate-fade-in space-y-6 p-4">
+      <div className="animate-fade-in space-y-6 p-4 max-w-4xl mx-auto">
         <Card className="overflow-hidden backdrop-blur-sm bg-opacity-50">
           <CardHeader className="relative p-6">
             <div className="flex flex-col items-center space-y-4">
-              <Avatar className="h-24 w-24">
+              <Avatar className="h-24 w-24 ring-2 ring-primary ring-offset-2">
                 <AvatarImage
                   src={
                     profile.avatar_url
@@ -149,7 +237,7 @@ export default function Profile() {
                       : undefined
                   }
                 />
-                <AvatarFallback>
+                <AvatarFallback className="bg-primary/10">
                   {profile.username?.[0]?.toUpperCase() || "?"}
                 </AvatarFallback>
               </Avatar>
@@ -163,6 +251,7 @@ export default function Profile() {
                   <Button
                     variant={isFollowing ? "outline" : "default"}
                     onClick={handleFollow}
+                    className="transition-all duration-300 hover:scale-105"
                   >
                     {isFollowing ? (
                       <>
@@ -179,7 +268,7 @@ export default function Profile() {
 
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button variant="outline">
+                      <Button variant="outline" className="transition-all duration-300 hover:scale-105">
                         <MessageCircle className="mr-2 h-4 w-4" />
                         Message
                       </Button>
@@ -212,6 +301,78 @@ export default function Profile() {
             </div>
           </CardContent>
         </Card>
+
+        {currentUser === profile.id && (
+          <>
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold">Your Posts</h3>
+              {posts.map((post) => (
+                <Card key={post.id} className="animate-fade-up">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start">
+                      <p className="text-sm">{post.content}</p>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Post</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this post? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeletePost(post.id)}>
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold">Your Messages</h3>
+              {messages.map((message) => (
+                <Card key={message.id} className="animate-fade-up">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start">
+                      <p className="text-sm">{message.content}</p>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Message</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this message? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteMessage(message.id)}>
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </Layout>
   );

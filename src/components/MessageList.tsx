@@ -3,9 +3,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Send } from "lucide-react";
+import { Send, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Message {
   id: string;
@@ -96,6 +107,30 @@ export function MessageList({ recipientId, currentUserId }: MessageListProps) {
       });
     } else {
       setNewMessage("");
+      toast({
+        title: "Message sent successfully",
+      });
+    }
+  };
+
+  const deleteMessage = async (messageId: string) => {
+    const { error } = await supabase
+      .from("messages")
+      .delete()
+      .eq("id", messageId)
+      .eq("sender_id", currentUserId);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error deleting message",
+        description: error.message,
+      });
+    } else {
+      toast({
+        title: "Message deleted successfully",
+      });
+      fetchMessages();
     }
   };
 
@@ -109,9 +144,9 @@ export function MessageList({ recipientId, currentUserId }: MessageListProps) {
               message.sender.username === currentUserId
                 ? "flex-row-reverse"
                 : "flex-row"
-            }`}
+            } animate-fade-up`}
           >
-            <Avatar className="h-8 w-8">
+            <Avatar className="h-8 w-8 ring-1 ring-primary/20">
               <AvatarImage
                 src={
                   message.sender.avatar_url
@@ -128,7 +163,7 @@ export function MessageList({ recipientId, currentUserId }: MessageListProps) {
               </AvatarFallback>
             </Avatar>
             <div
-              className={`rounded-lg p-3 ${
+              className={`group relative rounded-lg p-3 transition-all duration-300 hover:shadow-md ${
                 message.sender.username === currentUserId
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted"
@@ -140,6 +175,34 @@ export function MessageList({ recipientId, currentUserId }: MessageListProps) {
                   addSuffix: true,
                 })}
               </span>
+              
+              {message.sender.username === currentUserId && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute -right-10 top-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Message</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this message? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => deleteMessage(message.id)}>
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </div>
           </div>
         ))}
@@ -154,8 +217,13 @@ export function MessageList({ recipientId, currentUserId }: MessageListProps) {
               sendMessage();
             }
           }}
+          className="transition-all duration-300 focus:ring-2 focus:ring-primary/50"
         />
-        <Button onClick={sendMessage} disabled={!newMessage.trim()}>
+        <Button
+          onClick={sendMessage}
+          disabled={!newMessage.trim()}
+          className="transition-all duration-300 hover:scale-105"
+        >
           <Send className="h-4 w-4" />
         </Button>
       </div>
