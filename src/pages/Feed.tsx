@@ -22,6 +22,7 @@ interface Post {
   content: string;
   created_at: string;
   image_url: string | null;
+  user_id: string; // Added this line to fix the TypeScript error
   profiles: {
     username: string;
     avatar_url: string;
