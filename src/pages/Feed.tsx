@@ -7,13 +7,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
-import { MessageCircle, Loader2, ImagePlus } from "lucide-react";
+import { MessageCircle, Loader2, ImagePlus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LikeButton } from "@/components/LikeButton";
 import { CommentSection } from "@/components/CommentSection";
 import { Link } from "react-router-dom";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 interface Post {
   id: string;
@@ -165,17 +167,52 @@ const Feed = () => {
     }
   };
 
-  const handleLike = async (postId: string) => {
-    const { error } = await supabase.from("likes").insert({
-      post_id: postId,
-      user_id: userId,
-    });
+  const handleDeletePost = async (postId: string) => {
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", postId)
+        .eq("user_id", userId);
 
-    if (error && error.code !== "23505") {
+      if (error) throw error;
+
+      toast({
+        description: "Post deleted successfully",
+        duration: 1500,
+      });
+      
+      fetchPosts();
+    } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error liking post",
-        description: error.message,
+        title: "Error",
+        description: "Failed to delete post",
+      });
+    }
+  };
+
+  const handleEditPost = async (postId: string, newContent: string) => {
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .update({ content: newContent })
+        .eq("id", postId)
+        .eq("user_id", userId);
+
+      if (error) throw error;
+
+      toast({
+        description: "Post updated successfully",
+        duration: 1500,
+      });
+      
+      fetchPosts();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update post",
       });
     }
   };
@@ -258,7 +295,7 @@ const Feed = () => {
                     </AvatarFallback>
                   </Avatar>
                 </Link>
-                <div className="flex flex-col">
+                <div className="flex-1">
                   <Link
                     to={`/profile/${post.profiles.username}`}
                     className="font-semibold hover:text-primary transition-colors duration-300"
@@ -271,6 +308,57 @@ const Feed = () => {
                     })}
                   </p>
                 </div>
+                {userId === post.user_id && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          const newContent = prompt("Edit your post:", post.content);
+                          if (newContent && newContent !== post.content) {
+                            handleEditPost(post.id, newContent);
+                          }
+                        }}
+                      >
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <DropdownMenuItem
+                            onSelect={(e) => e.preventDefault()}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Post</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this post? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeletePost(post.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="whitespace-pre-wrap leading-relaxed">{post.content}</p>

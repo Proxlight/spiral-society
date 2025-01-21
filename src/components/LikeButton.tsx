@@ -62,19 +62,30 @@ export function LikeButton({ postId, userId, initialLikes }: LikeButtonProps) {
 
     try {
       if (isLiked) {
-        await supabase
+        const { error } = await supabase
           .from("likes")
           .delete()
           .eq("post_id", postId)
           .eq("user_id", userId);
+
+        if (error) throw error;
         setIsLiked(false);
+        setLikesCount((prev) => prev - 1);
       } else {
-        await supabase
+        const { error } = await supabase
           .from("likes")
           .insert({ post_id: postId, user_id: userId });
+
+        if (error) throw error;
         setIsLiked(true);
+        setLikesCount((prev) => prev + 1);
       }
-    } catch (error) {
+
+      toast({
+        description: isLiked ? "Post unliked" : "Post liked",
+        duration: 1500,
+      });
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -88,14 +99,14 @@ export function LikeButton({ postId, userId, initialLikes }: LikeButtonProps) {
       variant="ghost"
       size="sm"
       onClick={handleLike}
-      className="gap-2"
+      className="group flex items-center gap-2 hover:text-red-500 transition-colors duration-200"
     >
       <Heart
-        className={`h-4 w-4 ${
+        className={`h-4 w-4 transition-all duration-300 group-hover:scale-110 ${
           isLiked ? "fill-red-500 text-red-500" : ""
         }`}
       />
-      {likesCount}
+      <span className="text-sm font-medium">{likesCount}</span>
     </Button>
   );
 }
