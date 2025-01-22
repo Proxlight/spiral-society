@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Mail } from "lucide-react";
+import { RainbowButton } from "@/components/ui/rainbow-button";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -38,13 +39,14 @@ const Index = () => {
         <div className="space-y-6 w-full max-w-[400px] animate-fade-in">
           <div className="flex flex-col items-center space-y-4">
             {/* Spiral Mail Logo */}
-            <div className="relative w-12 h-12 md:w-16 md:h-16 animate-float">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center transform hover:scale-105 transition-transform">
-                <Mail className="w-6 h-6 md:w-8 md:h-8 text-white animate-[spin_3s_linear_infinite]" />
+            <div className="relative w-16 h-16 md:w-20 md:h-20 animate-float">
+              <div className="absolute inset-0 glass-morphism flex items-center justify-center transform hover:scale-105 transition-transform group">
+                <Mail className="w-8 h-8 md:w-10 md:h-10 text-primary group-hover:text-primary/80 transition-colors animate-[spin_3s_linear_infinite]" />
+                <div className="absolute inset-0 bg-primary/10 rounded-full blur-xl group-hover:bg-primary/20 transition-colors"></div>
               </div>
             </div>
             
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tighter bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tighter bg-gradient-to-br from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
               Spiral Society
             </h1>
             <p className="text-base md:text-lg text-muted-foreground max-w-[300px] mx-auto">
@@ -52,7 +54,7 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="w-full bg-card rounded-lg shadow-lg border p-6 space-y-4">
+          <div className="neo-blur rounded-2xl p-6 space-y-4">
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
@@ -66,14 +68,14 @@ const Index = () => {
                   button: { 
                     background: 'hsl(var(--primary))',
                     color: 'hsl(var(--primary-foreground))',
-                    borderRadius: '0.5rem',
+                    borderRadius: '0.75rem',
                   },
                   anchor: { 
                     color: 'hsl(var(--primary))',
                     fontWeight: '500',
                   },
                   input: {
-                    borderRadius: '0.5rem',
+                    borderRadius: '0.75rem',
                   },
                 },
                 variables: {

@@ -12,7 +12,7 @@
     --color-4: 195 100% 63%;
     --color-5: 90 100% 63%;
     
-    --background: 240 10% 96%;
+    --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
     
     --card: 0 0% 100%;
@@ -87,24 +87,15 @@
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .glass-morphism {
+    @apply backdrop-blur-xl bg-white/5 border border-white/10 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)];
   }
-}
-
-/* Custom animations */
-@keyframes float {
-  0% {
-    transform: translateY(0px);
+  
+  .neo-blur {
+    @apply backdrop-blur-2xl bg-black/40 border border-white/10;
   }
-  50% {
-    transform: translateY(-5px);
+  
+  .text-gradient {
+    @apply bg-gradient-to-br from-white via-white/90 to-white/70 bg-clip-text text-transparent;
   }
-  100% {
-    transform: translateY(0px);
-  }
-}
-
-.animate-float {
-  animation: float 3s ease-in-out infinite;
 }
