@@ -89,9 +89,11 @@ const Index = () => {
               }}
               providers={[]}
               redirectTo={window.location.origin + "/feed"}
-              onError={(error) => {
-                setError(error.message);
-                console.error("Auth error:", error);
+              options={{
+                onError: (error) => {
+                  setError(error.message);
+                  console.error("Auth error:", error);
+                }
               }}
             />
           </div>
