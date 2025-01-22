@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/use-toast";
-import { MessageCircle, Loader2, ImagePlus, MoreHorizontal, Pencil, Trash2, Share2 } from "lucide-react";
+import { MessageCircle, Loader2, ImagePlus, MoreHorizontal, Pencil, Trash2, Share2, ChevronDown, ChevronUp, Moon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,7 @@ import { CommentSection } from "@/components/CommentSection";
 import { Link } from "react-router-dom";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface Post {
   id: string;
@@ -40,6 +41,7 @@ const Feed = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isDimmed, setIsDimmed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -234,7 +236,31 @@ const Feed = () => {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto py-4 space-y-6 px-4 md:px-0">
+      <div className={`max-w-2xl mx-auto py-4 space-y-6 px-4 md:px-0 transition-colors duration-300 ${isDimmed ? 'bg-gray-950' : ''}`}>
+        {/* Modern Twitter-like Logo */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-2">
+            <svg
+              viewBox="0 0 24 24"
+              className="w-8 h-8 text-primary fill-current"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.065 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z" />
+            </svg>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              Spiral Society
+            </h1>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsDimmed(!isDimmed)}
+            className="rounded-full hover:bg-primary/10"
+          >
+            <Moon className="h-5 w-5" />
+          </Button>
+        </div>
+
         <Card className="border-none shadow-lg hover:shadow-xl transition-all duration-300 bg-white/80 backdrop-blur-sm">
           <CardContent className="pt-6">
             <div className="flex gap-4">
@@ -293,7 +319,9 @@ const Feed = () => {
           {posts.map((post) => (
             <Card 
               key={post.id}
-              className="group hover:shadow-lg transition-all duration-300 animate-fade-up border-none bg-white/80 backdrop-blur-sm"
+              className={`group hover:shadow-lg transition-all duration-300 animate-fade-up border-none ${
+                isDimmed ? 'bg-gray-900/80' : 'bg-white/80'
+              } backdrop-blur-sm`}
             >
               <CardHeader className="flex flex-row items-start space-y-0 gap-4">
                 <Link 
@@ -407,10 +435,24 @@ const Feed = () => {
                       initialLikes={post.likes.length}
                     />
                   )}
-                  <Button variant="ghost" size="sm" className="hover:text-primary transition-colors duration-300">
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    {post.comments.length}
-                  </Button>
+                  <Collapsible>
+                    <CollapsibleTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="hover:text-primary transition-colors duration-300 flex items-center gap-2"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                        <span>{post.comments.length}</span>
+                        <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-4">
+                      {userId && (
+                        <CommentSection postId={post.id} userId={userId} />
+                      )}
+                    </CollapsibleContent>
+                  </Collapsible>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -421,9 +463,6 @@ const Feed = () => {
                     Share
                   </Button>
                 </div>
-                {userId && (
-                  <CommentSection postId={post.id} userId={userId} />
-                )}
               </CardFooter>
             </Card>
           ))}
