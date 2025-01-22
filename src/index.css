@@ -82,7 +82,7 @@
     @apply bg-gradient-to-br from-background to-background/80 text-foreground antialiased min-h-screen;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display;
+    @apply font-bold;
   }
 }
 
