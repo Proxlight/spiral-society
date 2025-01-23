@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Sparkles } from "lucide-react";
-import { RainbowButton } from "@/components/ui/rainbow-button";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -78,7 +77,7 @@ const Index = () => {
                     color: 'hsl(var(--primary))',
                     fontWeight: '500',
                     textDecoration: 'none',
-                    hover: {
+                    '&:hover': {
                       textDecoration: 'underline',
                     },
                   },
@@ -87,7 +86,7 @@ const Index = () => {
                     padding: '0.75rem 1rem',
                     backgroundColor: 'hsl(var(--background))',
                     border: '1px solid hsl(var(--border))',
-                    focus: {
+                    '&:focus': {
                       borderColor: 'hsl(var(--ring))',
                       outline: 'none',
                       boxShadow: '0 0 0 2px hsl(var(--ring) / 0.2)',
@@ -126,6 +125,10 @@ const Index = () => {
               }}
               view="sign_in"
               showLinks={true}
+              onError={(error) => {
+                setError(error.message);
+                console.error("Auth error:", error);
+              }}
             />
           </div>
 
