@@ -77,20 +77,12 @@ const Index = () => {
                     color: 'hsl(var(--primary))',
                     fontWeight: '500',
                     textDecoration: 'none',
-                    '&:hover': {
-                      textDecoration: 'underline',
-                    },
                   },
                   input: {
                     borderRadius: '0.75rem',
                     padding: '0.75rem 1rem',
                     backgroundColor: 'hsl(var(--background))',
                     border: '1px solid hsl(var(--border))',
-                    '&:focus': {
-                      borderColor: 'hsl(var(--ring))',
-                      outline: 'none',
-                      boxShadow: '0 0 0 2px hsl(var(--ring) / 0.2)',
-                    },
                   },
                   label: {
                     color: 'hsl(var(--foreground))',
