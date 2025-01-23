@@ -97,9 +97,13 @@ const Index = () => {
                   },
                 },
               }}
-              onError={(error) => {
-                setError(error.message);
-                console.error("Auth error:", error);
+              view="sign_in"
+              showLinks={true}
+              {...{
+                onError: (error) => {
+                  setError(error.message);
+                  console.error("Auth error:", error);
+                }
               }}
             />
           </div>
