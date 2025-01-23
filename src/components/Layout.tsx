@@ -1,7 +1,9 @@
 import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, User, Bell, Search, Heart } from "lucide-react";
+import { Home, User, Bell, Search, Heart, Moon, Sun } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "./ui/button";
+import { useTheme } from "@/hooks/use-theme";
 
 interface LayoutProps {
   children: ReactNode;
@@ -11,6 +13,7 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { theme, setTheme } = useTheme();
   
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -36,6 +39,21 @@ export function Layout({ children }: LayoutProps) {
   
   return (
     <div className="min-h-screen bg-background">
+      <div className="fixed top-4 right-4 z-50">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full"
+          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+        >
+          {theme === "light" ? (
+            <Moon className="h-5 w-5" />
+          ) : (
+            <Sun className="h-5 w-5" />
+          )}
+        </Button>
+      </div>
+      
       <main className="container max-w-2xl mx-auto px-4 pb-16">
         {children}
       </main>

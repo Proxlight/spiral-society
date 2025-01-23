@@ -6,11 +6,11 @@
 
 @layer base {
   :root {
-    --color-1: 0 100% 63%;
-    --color-2: 270 100% 63%;
-    --color-3: 210 100% 63%;
-    --color-4: 195 100% 63%;
-    --color-5: 90 100% 63%;
+    --color-1: 265 89% 78%;
+    --color-2: 314 100% 47%;
+    --color-3: 174 75% 46%;
+    --color-4: 204 100% 40%;
+    --color-5: 43 96% 56%;
     
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
@@ -76,7 +76,7 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border selection:bg-primary/10 selection:text-primary;
   }
   body {
     @apply bg-gradient-to-br from-background to-background/80 text-foreground antialiased min-h-screen;
@@ -97,5 +97,21 @@
   
   .text-gradient {
     @apply bg-gradient-to-br from-white via-white/90 to-white/70 bg-clip-text text-transparent;
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+    100% {
+      transform: translateY(0px);
+    }
   }
 }

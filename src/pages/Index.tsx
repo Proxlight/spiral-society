@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { RainbowButton } from "@/components/ui/rainbow-button";
 
 const Index = () => {
@@ -38,11 +38,11 @@ const Index = () => {
       <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center text-center space-y-8 px-4 md:px-0">
         <div className="space-y-6 w-full max-w-[400px] animate-fade-in">
           <div className="flex flex-col items-center space-y-4">
-            {/* Spiral Mail Logo */}
+            {/* Spiral Society Logo */}
             <div className="relative w-16 h-16 md:w-20 md:h-20 animate-float">
-              <div className="absolute inset-0 glass-morphism flex items-center justify-center transform hover:scale-105 transition-transform group">
-                <Mail className="w-8 h-8 md:w-10 md:h-10 text-primary group-hover:text-primary/80 transition-colors animate-[spin_3s_linear_infinite]" />
-                <div className="absolute inset-0 bg-primary/10 rounded-full blur-xl group-hover:bg-primary/20 transition-colors"></div>
+              <div className="absolute inset-0 glass-morphism flex items-center justify-center transform hover:scale-105 transition-transform duration-300 group rounded-2xl">
+                <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-primary group-hover:text-primary/80 transition-colors animate-[pulse_3s_linear_infinite]" />
+                <div className="absolute inset-0 bg-primary/10 rounded-2xl blur-xl group-hover:bg-primary/20 transition-colors"></div>
               </div>
             </div>
             
@@ -54,7 +54,7 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="neo-blur rounded-2xl p-6 space-y-4">
+          <div className="neo-blur rounded-2xl p-6 space-y-4 backdrop-blur-xl">
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
@@ -69,13 +69,35 @@ const Index = () => {
                     background: 'hsl(var(--primary))',
                     color: 'hsl(var(--primary-foreground))',
                     borderRadius: '0.75rem',
+                    padding: '0.75rem 1rem',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    transition: 'all 0.2s',
                   },
                   anchor: { 
                     color: 'hsl(var(--primary))',
                     fontWeight: '500',
+                    textDecoration: 'none',
+                    ':hover': {
+                      textDecoration: 'underline',
+                    },
                   },
                   input: {
                     borderRadius: '0.75rem',
+                    padding: '0.75rem 1rem',
+                    backgroundColor: 'hsl(var(--background))',
+                    border: '1px solid hsl(var(--border))',
+                    ':focus': {
+                      borderColor: 'hsl(var(--ring))',
+                      outline: 'none',
+                      boxShadow: '0 0 0 2px hsl(var(--ring) / 0.2)',
+                    },
+                  },
+                  label: {
+                    color: 'hsl(var(--foreground))',
+                    marginBottom: '0.5rem',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
                   },
                 },
                 variables: {
@@ -83,6 +105,11 @@ const Index = () => {
                     colors: {
                       brand: 'hsl(var(--primary))',
                       brandAccent: 'hsl(var(--primary))',
+                      inputBackground: 'transparent',
+                      inputText: 'hsl(var(--foreground))',
+                      inputBorder: 'hsl(var(--border))',
+                      inputBorderFocus: 'hsl(var(--ring))',
+                      inputBorderHover: 'hsl(var(--ring))',
                     },
                   },
                 },
