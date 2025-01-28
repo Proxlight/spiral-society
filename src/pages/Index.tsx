@@ -61,6 +61,10 @@ const Index = () => {
             )}
             <Auth
               supabaseClient={supabase}
+              onError={(error) => {
+                setError(error.message);
+                console.error("Auth error:", error);
+              }}
               appearance={{
                 theme: ThemeSupa,
                 style: {
@@ -117,10 +121,6 @@ const Index = () => {
               }}
               view="sign_in"
               showLinks={true}
-              onError={(error) => {
-                setError(error.message);
-                console.error("Auth error:", error);
-              }}
             />
           </div>
 
