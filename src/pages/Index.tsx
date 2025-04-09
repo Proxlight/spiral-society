@@ -123,9 +123,7 @@ const Index = () => {
               }}
               view="sign_in"
               showLinks={true}
-              callbacks={{
-                onError: handleAuthError
-              }}
+              onError={handleAuthError}
             />
           </div>
 
