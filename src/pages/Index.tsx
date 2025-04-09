@@ -1,3 +1,4 @@
+
 import { Layout } from "@/components/Layout";
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
@@ -32,6 +33,11 @@ const Index = () => {
     return null;
   }
 
+  const handleAuthError = (error) => {
+    setError(error.message);
+    console.error("Auth error:", error);
+  };
+
   return (
     <Layout>
       <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center text-center space-y-8 px-4 md:px-0">
@@ -61,10 +67,6 @@ const Index = () => {
             )}
             <Auth
               supabaseClient={supabase}
-              onError={(error) => {
-                setError(error.message);
-                console.error("Auth error:", error);
-              }}
               appearance={{
                 theme: ThemeSupa,
                 style: {
@@ -121,6 +123,9 @@ const Index = () => {
               }}
               view="sign_in"
               showLinks={true}
+              callbacks={{
+                onError: handleAuthError
+              }}
             />
           </div>
 
