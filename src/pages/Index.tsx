@@ -1,4 +1,3 @@
-
 import { Layout } from "@/components/Layout";
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
@@ -123,9 +122,7 @@ const Index = () => {
               }}
               view="sign_in"
               showLinks={true}
-              callbacks={{
-                onError: handleAuthError
-              }}
+              onError={handleAuthError}
             />
           </div>
 

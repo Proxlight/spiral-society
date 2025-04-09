@@ -85,8 +85,16 @@ export function MessageList({ recipientId, currentUserId }: MessageListProps) {
         title: "Error fetching messages",
         description: error.message,
       });
-    } else {
-      setMessages(data || []);
+    } else if (data) {
+      const formattedMessages = data.map(msg => ({
+        id: msg.id,
+        content: msg.content,
+        created_at: msg.created_at,
+        sender: Array.isArray(msg.sender) && msg.sender.length > 0 
+          ? msg.sender[0]
+          : { username: "Unknown", avatar_url: null }
+      }));
+      setMessages(formattedMessages);
     }
   };
 
